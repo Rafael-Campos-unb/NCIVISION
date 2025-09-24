@@ -119,7 +119,7 @@ class SiameseTrainer:
         train_dataset = TripletDataset(train_triplets)
         val_dataset = TripletDataset(val_triplets)
 
-        # ✅ Create data loaders with original settings
+        # Create DataLoader
         train_loader = DataLoader(
             train_dataset,
             batch_size=self.config.batch_size,
@@ -214,7 +214,7 @@ class SiameseTrainer:
 
     def train(self, train_loader: DataLoader, val_loader: DataLoader) -> Dict[str, Any]:
         """
-        Complete training loop - ✅ Replicando lógica do original
+        Complete training loop
 
         Args:
             train_loader: Training data loader
@@ -226,7 +226,6 @@ class SiameseTrainer:
         print(f"🚀 Starting training for {self.config.epochs} epochs...")
         start_time = time.time()
 
-        # ✅ Set seed igual ao original
         torch.manual_seed(self.config.random_state)
 
         best_val_loss = float('inf')
@@ -248,7 +247,6 @@ class SiameseTrainer:
             print(f"Epoch [{epoch + 1}/{self.config.epochs}] - "
                   f"Train Loss: {train_loss:.4f}, Val Loss: {val_loss:.4f}")
 
-            # ✅ Early stopping igual ao original
             if (self.config.early_stop_threshold is not None and
                     train_loss <= self.config.early_stop_threshold):
                 print(f"Stopping early: loss {train_loss:.4f} < threshold {self.config.early_stop_threshold}")
@@ -271,7 +269,7 @@ class SiameseTrainer:
 
     def plot_training_curves(self, save_plot: bool = True, show_plot: bool = True):
         """
-        Plot training and validation loss curves - ✅ Igual ao original
+        Plot training and validation loss curves
 
         Args:
             save_plot: Whether to save the plot
@@ -281,23 +279,21 @@ class SiameseTrainer:
             print("⚠️ No training data to plot")
             return
 
-        plt.figure(figsize=(8, 6))  # ✅ Mesmo tamanho do original
+        plt.figure(figsize=(8, 6))  
         epochs = range(1, len(self.train_losses) + 1)
 
         plt.plot(epochs, self.train_losses, marker='o', label='Training Loss', linewidth=2)
         plt.plot(epochs, self.val_losses, marker='s', label='Validation Loss', linewidth=2)
 
-        plt.xlabel('Epoch', fontsize=16)  # ✅ Mesmo fontsize do original
-        plt.ylabel('Loss', fontsize=16)   # ✅ Mudado de 'Triplet Loss' para 'Loss'
-        # plt.title(f'Training Progress - {self.paths.experiment_name}', fontsize=16)  # ✅ Sem título como original
-        plt.xticks(epochs, fontsize=12)   # ✅ Mesmo fontsize do original
-        plt.yticks(fontsize=16)           # ✅ Mesmo fontsize do original
-        plt.legend(fontsize=16)           # ✅ Mesmo fontsize do original
-        plt.grid(True)                    # ✅ Igual ao original
+        plt.xlabel('Epoch', fontsize=16)
+        plt.ylabel('Loss', fontsize=16)
+        plt.xticks(epochs, fontsize=12)
+        plt.yticks(fontsize=16)
+        plt.legend(fontsize=16)
+        plt.grid(True)
         plt.tight_layout()
 
         if save_plot:
-            # ✅ Usar mesmo nome do original
             plot_filename = 'triplet_loss_train_val_plot.png'
             plt.savefig(plot_filename, dpi=300, bbox_inches='tight')
             print(f"📊 Plot saved to: {plot_filename}")
@@ -314,11 +310,9 @@ class SiameseTrainer:
         Args:
             additional_info: Additional information to save with the model
         """
-        # ✅ Salvar apenas o state_dict como no original
         torch.save(self.model.state_dict(), 'NCIVISION.pth')
         print(f"💾 Model saved to: NCIVISION.pth")
 
-        # Salvar versão completa também (opcional)
         save_dict = {
             'model_state_dict': self.model.state_dict(),
             'optimizer_state_dict': self.optimizer.state_dict(),
