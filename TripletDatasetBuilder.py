@@ -17,19 +17,16 @@ def apply_molecule_mask(image_array: np.ndarray) -> np.ndarray:
     """
     Applies a mask to the image to focus on the molecule and remove noise.
 
-    This is a placeholder function. You MUST replace it with your original
-    implementation for the training results to be consistent.
-
     Args:
         image_array (np.ndarray): The input image as a numpy array in the [0, 1] range.
 
     Returns:
         np.ndarray: The image with the mask applied.
     """
-    # If you don't have the function, the code will still run, but the data
-    # will be different from the original. The line below simply returns the image unchanged.
-    # logger.warning("`apply_molecule_mask` is not implemented. Returning original image.")
-    return image_array
+    masked_image = image_array.copy()
+    white_threlshold = 0.95
+    masked_image[image_array >= white_threlshold] = 0.0
+    return masked_image
 
 
 class TripletDataset(Dataset):
@@ -52,10 +49,10 @@ class TripletDataset(Dataset):
         self.target_size = target_size
         self.glcm_levels = glcm_levels
 
-        # ✅ Transformation pipeline recreated to be identical to the original
+        # Transformation pipeline
         self.transform = transforms.Compose([
             transforms.ToTensor(),
-            transforms.Resize(self.target_size, antialias=True),  # antialias=True is recommended
+            transforms.Resize(self.target_size, antialias=True),
             transforms.Normalize(mean=[0.5], std=[0.5])
         ])
 
@@ -97,7 +94,7 @@ class TripletDataset(Dataset):
         return len(self.triplet_list)
 
     def _load_mep_image(self, image_path: str) -> torch.Tensor:
-        """Loads and preprocesses the MEP image according to the original logic."""
+        """Loads and preprocesses the MEP image."""
         if not os.path.exists(image_path):
             raise FileNotFoundError(f"MEP image file not found: {image_path}")
 
@@ -110,7 +107,7 @@ class TripletDataset(Dataset):
             # 2. Convert to float and normalize to [0, 1]
             image = image.astype(np.float32) / 255.0
 
-            # 3. Apply the molecule mask (function you need to implement)
+            # 3. Apply the molecule mask
             image = apply_molecule_mask(image)
 
             # 4. Add channel dimension for ToTensor compatibility
@@ -131,7 +128,7 @@ class TripletDataset(Dataset):
         try:
             glcm_features = image_to_glcm(image_path, levels=self.glcm_levels)
 
-            # ✅ Validate feature size. If incorrect, throw a clear error.
+            # Validate feature size. If incorrect, throw a clear error.
             if len(glcm_features) != 64:
                 raise ValueError(f"Inconsistent GLCM feature size for {image_path}. "
                                  f"Expected: 64, Got: {len(glcm_features)}. "
