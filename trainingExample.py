@@ -7,7 +7,7 @@ from params import ModelParams
 
 def main():
     # 1. Load dataset
-    dataset = pd.read_csv('ExampleDataset.csv')
+    dataset = pd.read_csv('ExampleBCRABL.csv')
 
     # 2. Calculate molecular similarity
     model_params = ModelParams(dataset, 'SMILES', 'MOLECULE')
