@@ -14,20 +14,20 @@ from SimilarityCNN import SiameseNetwork
 
 def image_to_glcm(image_path, levels=8):
     if not isinstance(image_path, str):
-        raise TypeError(f"Esperado caminho como string, mas recebido: {type(image_path)} -> {image_path}")
+        raise TypeError(f"Expected path as string but received: {type(image_path)} -> {image_path}")
 
-    # Carregar a imagem em escala de cinza
+    # Loading image in grayscale
     img = cv2.imread(image_path, cv2.IMREAD_GRAYSCALE)
     if img is None:
-        raise ValueError(f"[ERRO] Imagem não carregada: {image_path}")
+        raise ValueError(f"[ERROR] Image not loaded: {image_path}")
 
-    # Normalizar para valores inteiros entre 0 e levels - 1
+    # Normalize to int value between 0 and - 1 levels
     img = np.uint8((img / 255.0) * (levels - 1))
 
-    # Gerar GLCM
+    # Generate GLCM
     glcm = graycomatrix(img, distances=[1], angles=[0], levels=levels, symmetric=True, normed=True)
 
-    # Retornar GLCM flatten
+    # Return GLCM flatten
     return glcm.flatten()
 
 
@@ -45,7 +45,9 @@ class GLCM_data:
     def GLCM(self, image_path):
         img_grayscale = imread(image_path, as_gray=True)
         img_grayscale_uint8 = (img_grayscale * 255).astype(np.uint8)
-        imsave(f'{os.path.basename(image_path)}RDG_GRAY.png', img_grayscale_uint8)
+        filename = f'{os.path.basename(image_path)}RDG_GRAY.png'
+        filepath = os.path.join(self.dirpath, filename)
+        imsave(filepath, img_grayscale_uint8)
         un_int_2d_array = (img_grayscale * (self.levels - 1)).astype(np.uint8)
         glcm = graycomatrix(
             un_int_2d_array,
@@ -65,62 +67,56 @@ class GLCM_data:
         cbar.ax.tick_params(labelsize=25)
         plt.xticks(fontsize=25)
         plt.yticks(fontsize=25)
-        # plt.title(f'Importância do Modelo no GLCM\n{os.path.basename(image_path)}')
         plt.tight_layout()
-        filename = f"{os.path.splitext(os.path.basename(image_path))[0]}_GLCM_ATTENTION.png"
-        # plt.show()
-        # save_path = os.path.join(self.dirpath, filename)
-        plt.savefig(f'{os.path.basename(image_path)}.png', dpi=300)
+        filename = f"{os.path.splitext(os.path.basename(image_path))[0]}_SalienceHeatmap.png"
+        filepath = os.path.join(self.dirpath, filename)
+        plt.savefig(filepath, dpi=300)
         plt.close()
 
     def plot_glcm_with_model_attention(self, image_path, model):
         glcm = self.GLCM(image_path)  # shape [levels, levels, 1, 1]
 
-        # Converte para tensor e prepara como entrada
+        # Convert to tensor and prepare entry
         glcm_tensor = torch.tensor(glcm, dtype=torch.float32).permute(2, 3, 0, 1)  # -> [1, 1, 8, 8]
         glcm_tensor = glcm_tensor.to(next(model.parameters()).device)
-        glcm_tensor.requires_grad_()  # ativa cálculo de gradiente
+        glcm_tensor.requires_grad_()  # activate gradient calculations
 
-        # Flatten para enviar para o submodelo
+        # Flatten -> submodel
         glcm_flat = glcm_tensor.view(glcm_tensor.size(0), -1)
 
-        # Passa pelo embedder
+        # Pass through embedder
         model.eval()
         output = model.glcm_embedder(glcm_flat)
 
-        # Garante que seja escalar antes do backward
         importance = output.sum()
-        model.zero_grad()  # limpa gradientes anteriores
+        model.zero_grad()  # clean previous gradients
         importance.backward()
 
-        # Calcula mapa de saliência (gradiente da entrada)
+        # Calculate saliency maps (gradients of entries)
         if glcm_tensor.grad is not None:
             saliency = glcm_tensor.grad.detach().squeeze().cpu().numpy()
 
-            # Normalização
+            # Normalization
             saliency = np.maximum(saliency, 0)
             if saliency.max() > 0:
                 saliency /= saliency.max()
 
-            # Armazena para uso posterior
             self.embedding_attention_map = saliency
             self.top_embedding_indices = np.unravel_index(np.argsort(saliency.ravel())[-3:], saliency.shape)
 
-            # Plot da imagem original com atenção
+            # Plot original image with attention
             self.plot_attention_on_rdg(image_path)
 
-            # Novo: salva o heatmap também!
+            # Plot saliency heatmap
             self.plot_glcm_attention_heatmap(image_path, saliency)
 
     def plot_attention_on_rdg(self, image_path):
-        # Carrega a imagem RDG em escala de cinza
         img = imread(image_path, as_gray=True)
         img_shape = img.shape  # e.g., (256, 256)
 
-        # Normaliza a imagem para [0, 1] para melhor sobreposição
+        # Normalize image to [0, 1]
         img = img / 255.0 if img.max() > 1 else img
 
-        # Upsample do mapa de atenção GLCM para o tamanho da imagem
         saliency_resized = resize(
             self.embedding_attention_map,
             img_shape,
@@ -131,7 +127,7 @@ class GLCM_data:
 
         plt.figure(figsize=(6, 6))
         plt.imshow(img, cmap='gray')
-        plt.imshow(saliency_resized, cmap='hot', alpha=0.5)  # sobreposição em vermelho/amarelo
+        plt.imshow(saliency_resized, cmap='hot', alpha=0.5)  # sobreposition red/yellow
 
         plt.axis('off')
         filename = f"{os.path.splitext(os.path.basename(image_path))[0]}_RDG_ATTENTION.png"
@@ -183,9 +179,7 @@ class GLCM_data:
         }
 
         self.dataset = pd.DataFrame(data, index=image_names)
-        # self.dataset.to_csv('dataset.csv')
-        # self.dataset.to_csv('datasetAChEI.csv')
-        self.dataset.to_csv('datasetAChEICannabinoids.csv')
+        self.dataset.to_csv('dataset.csv')
         return self.dataset
 
     def getMean(self):
@@ -196,32 +190,29 @@ class GLCM_data:
 
 
 if __name__ == '__main__':
-    # dirpath = 'C:/NCIVISION/NCI_BCRABL_cropped/'
-    # dirpath = 'C:/NCIVISION/NCI_AChEI_cropped'
-    dirpath = 'C:/NCIVISION/NCIs'
+    dirpath = './NCIs'
     angles = [0]
     levels = 8
 
     glcm_data = GLCM_data(dirpath, angles, levels)
 
-    # model_path = "NCIVISION.pth"
-    # model_path = "NCIVISION_AChEI.pth"
-    model_path = "NCIVISION_AChEICannabinoids.pth"
+    model_path = "./models/siamese_model_calculated_similarity.pth"
     device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
     model = SiameseNetwork().to(device)
-    model.load_state_dict(torch.load(model_path, map_location=device))
+    checkpoint = torch.load(model_path, map_location=device, weights_only=False)
+    model.load_state_dict(checkpoint['model_state_dict'])
     model.eval()
 
-    print("Gerando dataset e imagens com atenção nos embeddings...")
+    print("Generating dataset and images with attention in embeddings")
     dataset = glcm_data.process_images(model=model)
 
-    print("\nDataset gerado:")
+    print("\nDataset created:")
     print(dataset)
 
-    print("\nMédia de cada coluna:")
+    print("\nMean of each column:")
     print(glcm_data.getMean())
 
-    print("\nDesvio padrão de cada coluna:")
+    print("\nStandard deviation of each column:")
     print(glcm_data.getSdv())
 
 
