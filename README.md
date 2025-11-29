@@ -71,7 +71,7 @@ NCIVISION is licensed under the MIT License. See the **`LICENSE`** file for deta
 
 ### Citation
 If you use NCIVISION in your research, please cite our paper:
-[Field for Article Citation]
+https://www.mdpi.com/1420-3049/30/23/4589
 
 ### Contact
 For questions or contributions, please contact us at [rafaelcamposunb@gmail.com].
