@@ -57,6 +57,7 @@ To set up NCIVISION, clone the repository and install the necessary packages.
 git clone https://github.com/yourusername/ncivision.git
 cd ncivision
 pip install -r requirements.txt
+```
 
 ### Usage
 
